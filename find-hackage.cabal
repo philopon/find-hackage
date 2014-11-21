@@ -32,6 +32,9 @@ executable store-package
                        , Cabal                >=1.20
                        , http-client-tls      >=0.2
                        , http-conduit         >=2.1
+                       , lifted-base          >=0.2
+                       , time                 >=1.4
+                       , old-locale           >=1.0
     buildable: True
   else
     buildable: False
@@ -55,10 +58,12 @@ executable find-hackage
                      , Cabal                >=1.20
                      , http-client-tls      >=0.2
                      , http-conduit         >=2.1
+                     , lifted-base          >=0.2
+                     , time                 >=1.4
+                     , old-locale           >=1.0
 
                      , exceptions           >=0.6
                      , http-types           >=0.8
-                     , lifted-base          >=0.2
                      , monad-control        >=0.3
                      , apiary               >=1.1.4
                      , apiary-helics        >=1.1.4
@@ -71,8 +76,6 @@ executable find-hackage
                      , bytestring-show      >=0.3
                      , lens-aeson           >=1.0
                      , pugixml              >=0.3
-                     , time                 >=1.4
-                     , old-locale           >=1.0
                      , bytestring-trie      >=0.2
   hs-source-dirs:      src
   ghc-options:         -Wall -O2 -threaded

@@ -1,4 +1,7 @@
 {-# LANGUAGE NoMonomorphismRestriction #-}
+{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings         #-}
 {-# LANGUAGE Rank2Types                #-}
 {-# LANGUAGE TemplateHaskell           #-}
@@ -12,6 +15,7 @@ import           Control.Applicative
 import           Control.Monad
 import           Control.Monad.IO.Class
 import           Control.Monad.Trans.Resource
+import Control.Exception.Lifted
 
 import           Data.Aeson                                    ((.:), (.=))
 import qualified Data.Aeson                                    as JSON
@@ -40,6 +44,9 @@ import           Network.HTTP.Conduit
 import           System.Environment
 
 import Numeric
+import Data.Time
+import System.Locale
+import System.IO
 
 untar :: MonadThrow m => Conduit S.ByteString m Tar.Entry
 untar = do
@@ -61,17 +68,19 @@ resultMaybe :: D.ParseResult a -> Maybe a
 resultMaybe (D.ParseOk _ a) = Just a
 resultMaybe _ = Nothing
 
-entryToPackageDescription :: Monad m => Conduit Tar.Entry m D.PackageDescription
-entryToPackageDescription =
+entryToPackageDescription :: (MonadBaseControl IO m, MonadIO m) => Request -> Manager
+                          -> Conduit Tar.Entry m (D.PackageDescription, UTCTime)
+entryToPackageDescription req mgr =
     CL.filter isCabalFile =$
     CL.mapMaybe (normalFileContent . Tar.entryContent) =$
     CL.mapMaybe (resultMaybe . D.parsePackageDescription . L.unpack) =$
     CL.map D.flattenPackageDescription =$
     CL.groupBy ((==) `on` (D.pkgName . D.package)) =$
-    CL.map (maximumBy (compare `on` (D.pkgVersion . D.package)))
+    CL.map (maximumBy (compare `on` (D.pkgVersion . D.package))) =$
+    CL.mapM (\pd -> (pd,) <$> getLastUploaded (D.display . D.pkgName $ D.package pd) req mgr)
 
-pdToValue :: D.PackageDescription -> Maybe [T.Text] -> JSON.Value
-pdToValue p dpr = JSON.object
+pdToValue :: D.PackageDescription -> UTCTime -> Maybe [T.Text] -> JSON.Value
+pdToValue p upl dpr = JSON.object
     [ "name"          .= name
     , "version"       .= (D.display . D.pkgVersion . D.package) p
     , "license"       .= (D.display . D.license) p
@@ -89,6 +98,7 @@ pdToValue p dpr = JSON.object
     , "executables"   .= (map D.exeName . D.executables) p
     , "deprecated"    .= isJust dpr
     , "inFavourOf"    .= maybe [] id dpr
+    , "lastUploaded"  .= upl
     , "ngram"         .= JSON.object
         [ "description" JSON..= (filter (`notElem` " \t\n\r") . unescapeHtml . D.description) p
         , "synopsis"    JSON..= (filter (`notElem` " \t\n\r") . unescapeHtml . D.synopsis) p
@@ -134,21 +144,30 @@ parseUrl' s0 = do
     req <- parseUrl . concat $ map T.unpack [proto, s3]
     return $ applyBasicAuth (T.encodeUtf8 $ T.init user) (T.encodeUtf8 $ T.init pass) req
 
+defaultTime :: UTCTime
+defaultTime = UTCTime (ModifiedJulianDay 0) 0
+
+getLastUploaded :: (MonadIO m, MonadBaseControl IO m) => String -> Request -> Manager -> m UTCTime
+getLastUploaded pkg req mgr = fmap (maybe defaultTime id . either (\(_ :: SomeException) -> Nothing) id) . try $
+    parseTime defaultTimeLocale "%a %b %e %X %Z %Y" . L.unpack . responseBody <$>
+    httpLbs req { path = S.pack $ "/package/" ++ pkg ++ "/upload-time" } mgr
+
 sinkStoreElasticsearch :: (MonadThrow m, MonadIO m)
                        => Int -> H.HashMap T.Text [T.Text] -> Request -> Manager
-                       -> Consumer D.PackageDescription m ()
+                       -> Consumer (D.PackageDescription, UTCTime) m ()
 sinkStoreElasticsearch cs dpr req' mgr = do
     let req = req' { method = "POST" }
     fix $ \loop -> do
         chunk <- CL.take cs
         let cmd i = JSON.object ["index" .= JSON.object ["_id" .= (i :: String)]]
-            body = L.unlines . map JSON.encode $ concatMap (\p ->
+            body = L.unlines . map JSON.encode $ concatMap (\(p,upd) ->
                 let pkg = D.display . D.pkgName $ D.package p in
                 [ cmd pkg
-                , pdToValue p (H.lookup (T.pack pkg) dpr)
+                , pdToValue p upd (H.lookup (T.pack pkg) dpr)
                 ]) chunk
         unless (null chunk) $ do
             _ <- liftIO $ httpLbs req { requestBody = RequestBodyLBS body } mgr
+            liftIO $ putChar '.' >> hFlush stdout
             loop
 
 newtype Deprecateds = Deprecateds { unDeprecateds :: H.HashMap T.Text [T.Text] }
@@ -167,14 +186,14 @@ getDeprecateds mgr = do
     maybe (fail "getDeprecateds: decode json failed.") return $
         unDeprecateds <$> (JSON.decode $ responseBody res)
 
-storeElasticsearch :: (MonadThrow m, MonadIO m, MonadResource m) => String -> Manager -> m ()
+storeElasticsearch :: (MonadBaseControl IO m, MonadThrow m, MonadIO m, MonadResource m) => String -> Manager -> m ()
 storeElasticsearch url mgr = do
     dpr   <- getDeprecateds mgr
     index <- parseUrl "http://hackage.haskell.org/packages/index.tar.gz"
     src   <- http index mgr
     req   <- parseUrl' url
     responseBody src $$+-
-        ZLib.ungzip =$ untar =$ entryToPackageDescription =$
+        ZLib.ungzip =$ untar =$ entryToPackageDescription index mgr =$
         sinkStoreElasticsearch 500 dpr req { path = "/find_hackage/package/_bulk" } mgr
 
 main :: IO ()

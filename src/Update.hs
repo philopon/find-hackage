@@ -1,4 +1,5 @@
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -32,9 +33,13 @@ import qualified Distribution.PackageDescription               as D
 import qualified Distribution.PackageDescription.Configuration as D
 import qualified Distribution.PackageDescription.Parse         as D
 
+import Data.Time
+import System.Locale
+
 data Recent = Recent
     { recentName    :: S.ByteString
     , recentVersion :: S.ByteString
+    , recentTime    :: UTCTime
     } deriving (Show, Ord, Eq)
 
 parseRecents :: Document -> [Recent]
@@ -43,8 +48,9 @@ parseRecents = map maximum . groupBy ((==) `on` recentName) . sort .
   where
     getElem (Left n) = do
         (pkg, v) <- S.break (== ' ') . text <$> child "title" n
+        pub      <- child "pubDate" n >>= parseTime defaultTimeLocale rfc822DateFormat . S.unpack . text
         guard . not $ S.null v
-        return $ Recent pkg (S.tail v)
+        return $ Recent pkg (S.tail v) pub
     getElem _ = Nothing
 
 newtype Version = Version { unVersion :: S.ByteString }
@@ -74,16 +80,16 @@ getStoredVersion req pkg mgr = do
         else return . fmap unVersion $ JSON.decode (responseBody res)
 
 isNewer :: MonadIO m => Request -> Recent -> Manager -> m Bool
-isNewer req (Recent pkg v) mgr = maybe True (v /=) `liftM` getStoredVersion req pkg mgr
+isNewer req (Recent pkg v _) mgr = maybe True (v /=) `liftM` getStoredVersion req pkg mgr
 
 fetchCabalFile :: MonadIO m => Request -> Manager -> Recent -> m (Maybe D.PackageDescription)
-fetchCabalFile req mgr (Recent pkg ver) = do
+fetchCabalFile req mgr (Recent pkg ver _) = do
     res <- httpLbs req { HTTP.path = S.concat ["/package/", pkg, "-", ver, "/", pkg, ".cabal"]  } mgr
     return $ case D.parsePackageDescription (TL.unpack . TL.decodeUtf8 $ responseBody res) of
         D.ParseOk _ pd -> Just (D.flattenPackageDescription pd)
         _              -> Nothing
 
-updater :: (MonadThrow m, MonadIO m) => Maybe HTTPDate -> Request -> Manager -> m [D.PackageDescription]
+updater :: (Functor m, MonadThrow m, MonadIO m) => Maybe HTTPDate -> Request -> Manager -> m [(D.PackageDescription, UTCTime)]
 updater snc baseReq mgr = do
     hackage <- parseUrl "http://hackage.haskell.org/packages/recent.rss"
     rss     <- flip httpLbs mgr $ case snc of
@@ -96,7 +102,7 @@ updater snc baseReq mgr = do
         else case parse def $ (L.toStrict $ responseBody rss) of
             Right doc -> do
                 upds <- filterM (\r -> isNewer baseReq r mgr) $ parseRecents doc
-                pds  <- catMaybes `liftM` mapM (fetchCabalFile hackage mgr) upds
+                pds  <- catMaybes `liftM` mapM (\r -> fmap (,recentTime r) <$> fetchCabalFile hackage mgr r) upds
                 CL.sourceList pds $$ StorePackage.sinkStoreElasticsearch 100 H.empty baseReq mgr
                 return pds
             Left _    -> return []
