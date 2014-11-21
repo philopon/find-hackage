@@ -49,6 +49,7 @@ import qualified Text.XML.Pugi.Mutable as XML
 import Data.Time
 import System.Locale
 import qualified Data.Trie as Trie
+import qualified StorePackage
 
 import Web.Apiary.Helics
 
@@ -57,7 +58,7 @@ instance Extension Elasticsearch
 
 initElasticsearch :: Has Heroku es => Initializer IO es (Elasticsearch ': es)
 initElasticsearch = initializerBracket $ \e m -> do
-    url <- liftIO $ fmap (HTTP.parseUrl . T.unpack) <$> getHerokuEnv "BONSAI_URL" e
+    url <- liftIO $ fmap (StorePackage.parseUrl' . T.unpack) <$> getHerokuEnv "BONSAI_URL" e
     case url of
         Just (Just r) -> HTTP.withManager HTTP.tlsManagerSettings $ \mgr -> m $ Elasticsearch r mgr
         _ -> fail "initElasticsearch: failed."
