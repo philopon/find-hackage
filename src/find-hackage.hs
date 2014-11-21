@@ -78,7 +78,7 @@ searchPackage skip query =
             [ "query" JSON..= JSON.object
                 [ "query_string" JSON..= JSON.object
                     [ "query"  JSON..= query
-                    , "fields" JSON..= [ "name", "synopsis", "description" :: T.Text
+                    , "fields" JSON..= [ "name^5", "synopsis", "description" :: T.Text
                                        , "ngram.name", "ngram.synopsis", "ngram.description"
                                        ]
                     , "use_dis_max"                  JSON..= True
