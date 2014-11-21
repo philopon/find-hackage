@@ -2,4 +2,9 @@
 bower_components
 cabal.sandbox.config
 node_modules
-dist
+dist/*
+!dist/build
+dist/build/*
+!dist/build/find-hackage
+dist/build/find-hackage/*
+!dist/build/find-hackage/find-hackage
