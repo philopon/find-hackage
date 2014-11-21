@@ -266,6 +266,8 @@ main = runHerokuWith run (initElasticsearch +> initHerokuHelics def {appName = "
         contentType "application/opensearchdescription+xml"
         file' "static/opensearch.xml" Nothing
 
+    [capture|/nop|] . action $ bytes "nop"
+
     [capture|/**path|] . method GET . action $ do
         p <- param [key|path|]
         file (joinPath $ "static" : map T.unpack p) Nothing
