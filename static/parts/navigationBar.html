@@ -1,0 +1,36 @@
+<nav class="navbar navbar-default" role="navigation">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navigationbar-collapse">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="#/">{{brand}}</a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="navigationbar-collapse">
+
+
+      <form ng-show="searchbox" ng-submit="search()" class="navbar-form navbar-right" role="search">
+        <div class="form-group">
+          <div class="input-group">
+            <search-box error="error" ng-model="navBar.query"></search-box>
+            <span class="input-group-btn">
+              <button type="submit" class="btn btn-default">
+                <span class="glyphicon glyphicon-search" aria-hidden="true"></span>
+              </button>
+            </span>
+          </div>
+        </div>
+      </form>
+
+      <ul class="nav navbar-nav navbar-right">
+        <li><a href="/api/documentation">API</a></li>
+      </ul>
+
+    </div>
+
+  </div>
+</nav>

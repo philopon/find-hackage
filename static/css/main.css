@@ -1,0 +1,58 @@
+footer {
+  padding-top: 30px;
+  padding-bottom: 50px;
+  margin-top: 20px;
+  text-align: center;
+  color: #777;
+  border-top: 1px solid #e5e5e5;
+}
+
+.pagination span {
+  cursor: pointer;
+}
+
+#index-search-box {
+  margin-bottom: 10px;
+}
+
+#search-result .index, #search-result .score, #search-result .license {
+  padding-top: 4px;
+  text-align: right;
+}
+
+#search-result .license {
+  margin-right: 10px;
+  color: steelblue;
+  cursor: pointer;
+}
+
+#search-result .name a {
+  font-size: 18px;
+}
+
+#search-result .synopsis {
+  color: gray;
+}
+
+#search-result .item {
+  margin-bottom: 15px;
+}
+
+#search-result .deprecated {
+  color: red;
+  text-align: right;
+  padding-top: 4px;
+  margin-right: 5px;
+}
+
+#search-result .categories {
+  margin-right: 5px;
+}
+
+#search-result .categories .separator {
+  margin-right: 2px;
+}
+#search-result .categories .category {
+  cursor: pointer;
+}
+

@@ -1,0 +1,31 @@
+<div class="page-header">
+  <h1>{{queryString}} <small>{{count}} hits</small></h1>
+</div>
+
+<pagination page="page" n-page="nPage" set-page="setPage">
+  <div id="search-result" ng-repeat="item in items">
+    <div class="row item">
+      <div class="col-xs-1 index">{{$index + 1 + (page - 1) * 10 | number:0}}</div>
+      <div class="col-xs-10">
+        <div class="row">
+          <div class="pull-left name">
+            <a ng-href="http://hackage.haskell.org/package/{{item.name}}">{{item.name}}-{{item.version}}</a>
+          </div>
+          <div class="pull-right score" title="score">{{item.score | number:2}}</div>
+          <div class="pull-right license" ng-click="search({q: navBar.query + ' AND license:' + item.license})">{{item.license}}</div>
+          <div ng-if="item.deprecated" class="pull-right deprecated">DEPRECATED</div>
+        </div>
+        <div class="row">
+          <div class="categories pull-left">
+            <div class="pull-left category"
+                 ng-click="search({q: navBar.query + ' AND category:' + category})"
+                 ng-repeat-start="category in item.category">{{category}}</div>
+            <div class="pull-left separator" ng-repeat-end>{{$last ? "" : ","}}</div>
+          </div>
+
+          <div class="pull-left synopsis">{{item.synopsis}}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</pagination>

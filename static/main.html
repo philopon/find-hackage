@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="findHackageApp">
+  <head>
+    <meta charset="UTF-8" />
+    <script src="https://code.jquery.com/jquery-2.1.1.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.3/angular.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.3/angular-route.js"></script>
+    <script src="/bower_components/angulartics/dist/angulartics.min.js"></script>
+    <script src="/bower_components/angulartics/dist/angulartics-ga.min.js"></script>
+    <script src="/js/main.js"></script>
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.css">
+    <link rel="search" type="application/opensearchdescription+xml" title="find-hackage" href="/opensearch.xml">
+    <link rel="shortcut icon" href="/favicon.ico" type="image/vnd.microsoft.icon" />
+    <link rel="icon" href="/favicon.ico" type="image/vnd.microsoft.icon" />
+    <page-title></page-title>
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+      ga('create', 'UA-48784415-5', 'auto');
+    </script>
+  </head>
+  <body>
+    <navigation-bar brand="find hackage"></navigation-bar>
+    <div class="container" ng-view></div>
+    <footer class="hidden-print">
+      <p>This site provided by <a href="https://github.com/philopon/apiary">apiary</a> web framework.</p>
+      <p>source code on <a href="https://github.com/philopon/best-haskell">github</a>.</p>
+    </footer>
+  </body>
+</html>

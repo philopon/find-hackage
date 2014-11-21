@@ -1,0 +1,4 @@
+.cabal-sandbox
+bower_components
+cabal.sandbox.config
+node_modules

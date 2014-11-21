@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OpenSearchDescription
+  xmlns="http://a9.com/-/spec/opensearch/1.1/"
+  xmlns:moz="http://www.mozilla.org/2006/browser/search/">
+  <ShortName>find-hackage</ShortName>
+  <Description>advanced hackage search</Description>
+  <Tags>Haskell</Tags>
+  <Contact>philopon.dependence@gmail.com</Contact>
+  <Image height="16" width="16" type="image/x-icon">http://find-hackage.herokuapp.com/favicon.ico</Image>
+  <Image height="64" width="64" type="image/png">http://find-hackage.herokuapp.com/favicon64.png</Image>
+  <Url type="text/html" method="get"
+    template="http://find-hackage.herokuapp.com/#/q?q={searchTerms}"/>
+  <Url type="application/atom+xml" method="get"
+    template="http://find-hackage.herokuapp.com/search?q={searchTerms}"/>
+  <Url type="application/x-suggestions+json" method="get"
+     template="http://find-hackage.herokuapp.com/suggestions?q={searchTerms}" />
+</OpenSearchDescription>

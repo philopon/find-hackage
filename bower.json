@@ -1,0 +1,14 @@
+{
+  "name": "find-hackage",
+  "version": "0.0.0",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "angulartics": "~0.17.1"
+  }
+}

@@ -1,0 +1,17 @@
+<div class="page-header">
+  <h1 class="text-center">find hackage <small>advanced hackage search</small></h1>
+  <div class="text-center" ng-show="total">hackage has {{total}} packages<span ng-show="updated"> as of {{updated | date:'short'}}.</span></div>
+</div>
+
+<form ng-submit="search()">
+  <div class="row">
+    <div id="index-search-box" class="col-xs-offset-1 col-xs-10">
+      <search-box ng-model="navBar.query" error="error"></search-box>
+    </div>
+  </div>
+  <div class="text-center">
+    <button type="submit" class="btn btn-default">Search</button>
+    <button type="button" ng-click="imFeelingLucky()" class="btn btn-default">I'm Feeling Lucky</button>
+  </div>
+</form>
+

@@ -1,0 +1,62 @@
+{
+  "settings": {
+    "index": {
+      "number_of_shards": 10,
+      "analysis": {
+        "filter": {
+          "myNGram": {
+            "type": "nGram",
+            "min_gram": 1,
+            "max_gram": 10
+          }
+        },
+        "analyzer": {
+          "myNGramAnalyzer": {
+            "type": "custom",
+            "tokenizer": "standard",
+            "filter": ["standard", "lowercase", "myNGram"]
+          }
+        }
+      }
+    }
+  },
+  "mappings": {
+    "package": {
+      "properties": {
+        "name":          {"type": "string"},
+        "version":       {"type": "string"},
+        "license":       {"type": "string"},
+        "copyright":     {"type": "string"},
+        "maintainer":    {"type": "string"},
+        "author":        {"type": "string"},
+        "stability":     {"type": "string"},
+        "homepage":      {"type": "string"},
+        "bugReports":    {"type": "string"},
+        "synopsis":      {"type": "string"},
+        "description":   {"type": "string"},
+        "category":      {"type": "string"},
+        "hasLibrary":    {"type": "boolean"},
+        "executable":    {"type": "string"},
+        "deprecated":    {"type": "boolean"},
+        "hasExecutable": {"type": "boolean"},
+        "inFavourOf":    {"type": "string"},
+        "ngram": {
+          "type": "object",
+          "properties": {
+            "name":        {"type": "string", "analyzer": "myNGramAnalyzer"},
+            "synopsis":    {"type": "string", "analyzer": "myNGramAnalyzer"},
+            "description": {"type": "string", "analyzer": "myNGramAnalyzer"}
+          }
+        },
+        "raw": {
+          "type": "object",
+          "properties": {
+            "name":     {"type": "string", "index": "not_analyzed"},
+            "license":  {"type": "string", "index": "not_analyzed"},
+            "category": {"type": "string", "index": "not_analyzed"}
+          }
+        }
+      }
+    }
+  }
+}
