@@ -1,5 +1,5 @@
 .cabal-sandbox
-bower_components
+/bower_components
 cabal.sandbox.config
 node_modules
 dist/*
