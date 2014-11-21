@@ -50,6 +50,8 @@ import Data.Time
 import System.Locale
 import qualified Data.Trie as Trie
 
+import Web.Apiary.Helics
+
 data Elasticsearch = Elasticsearch HTTP.Request HTTP.Manager
 instance Extension Elasticsearch
 
@@ -182,7 +184,7 @@ initCandidates = do
         }
 
 main :: IO ()
-main = runHerokuWith run (initElasticsearch +> initHerokuHelics def {H.appName = "find-hackage"}) def $ do
+main = runHerokuWith run (initElasticsearch +> initHerokuHelics def {appName = "find-hackage"}) def $ do
     lastUpdated <- liftIO $ newIORef (defaultHTTPDate, Right 0 :: Either SomeException Int)
     cands <- liftIO . newIORef =<< initCandidates
     _ <- getExt (Proxy :: Proxy Elasticsearch) >>= fork . sentinel lastUpdated cands
