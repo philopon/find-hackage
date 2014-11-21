@@ -75,15 +75,17 @@ searchPackage :: (Has Elasticsearch exts, MonadIO m)
               => Word -> T.Text -> ActionT exts prms m JSON.Value
 searchPackage skip query =
     let body = JSON.object
-            [ "query" JSON..= JSON.object [ "bool" JSON..= JSON.object [ "should" JSON..=
-                [ JSON.object [ "term" JSON..= JSON.object [ "name" JSON..= query]]
-                , JSON.object [ "query_string" JSON..= JSON.object
-                    [ "query"         JSON..= query
-                    , "fields" JSON..= [ "name", "synopsis", "description"
-                                       , "ngram.name", "ngram.synopsis", "ngram.description" :: T.Text]
-                    , "use_dis_max"   JSON..= True
-                    ] ]
-                ] ] ] 
+            [ "query" JSON..= JSON.object
+                [ "query_string" JSON..= JSON.object
+                    [ "query"  JSON..= query
+                    , "fields" JSON..= [ "name", "synopsis", "description" :: T.Text
+                                       , "ngram.name", "ngram.synopsis", "ngram.description"
+                                       ]
+                    , "use_dis_max"                  JSON..= True
+                    , "default_operator"             JSON..= ("AND" :: T.Text)
+                    , "auto_generate_phrase_queries" JSON..= True
+                    ]
+                ]
             , "from" JSON..= skip
             ]
     in rawElasticsearchQuery
