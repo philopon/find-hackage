@@ -7,6 +7,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE LambdaCase #-}
 
 import Control.Applicative
 import Control.Exception.Lifted
@@ -52,6 +53,7 @@ import qualified Data.Trie as Trie
 import qualified StorePackage
 
 import Web.Apiary.Helics
+import System.Environment (getArgs)
 
 data Elasticsearch = Elasticsearch HTTP.Request HTTP.Manager
 instance Extension Elasticsearch
@@ -71,9 +73,9 @@ rawElasticsearchQuery reqmod = do
         JSON.decode . HTTP.responseBody =<< liftIO (HTTP.httpLbs (reqmod req) mgr)
     return (r::JSON.Value)
 
-searchPackage :: (Has Elasticsearch exts, MonadIO m)
+searchPackage :: (Has Elasticsearch exts, Has Arguments exts, MonadIO m)
               => Word -> T.Text -> ActionT exts prms m JSON.Value
-searchPackage skip query =
+searchPackage skip query = do
     let body = JSON.object
             [ "query" JSON..= JSON.object
                 [ "query_string" JSON..= JSON.object
@@ -81,15 +83,14 @@ searchPackage skip query =
                     , "fields" JSON..= [ "name^5", "synopsis", "description" :: T.Text
                                        , "ngram.name", "ngram.synopsis", "ngram.description"
                                        ]
-                    , "use_dis_max"                  JSON..= True
                     , "default_operator"             JSON..= ("AND" :: T.Text)
-                    , "auto_generate_phrase_queries" JSON..= True
                     ]
                 ]
             , "from" JSON..= skip
             ]
-    in rawElasticsearchQuery
-        (\r -> r { HTTP.path        = "/find_hackage/package/_search" 
+    p <- elasticRequestUrl "/package/_search" 
+    rawElasticsearchQuery
+        (\r -> r { HTTP.path        = p
                  , HTTP.requestBody = HTTP.RequestBodyLBS $ JSON.encode body
                  })
 
@@ -141,13 +142,14 @@ createAtom upd feedId total startI startP terms items = XML.create $ \doc -> do
         _ <- XML.appendElement "description" item >>= XML.appendPCData (i ^. _2)
         return ()
 
-sentinel :: (MonadHas Elasticsearch m, MonadIO m, MonadBaseControl IO m)
+sentinel :: (MonadHas Elasticsearch m, MonadHas Arguments m, MonadIO m, MonadBaseControl IO m)
          => IORef (HTTPDate, Either SomeException Int) -> IORef Candidates -> Elasticsearch -> m ()
 sentinel lastUpdated cands (Elasticsearch req mgr) = loop where
   loop = do
       (upd, _) <- liftIO $ readIORef lastUpdated
+      p <- elasticRequestUrl "/package/_bulk"
       updateAction <-
-        do new <- liftIO $ Update.updater (Just upd) req { HTTP.path = "/find_hackage/package/_bulk" } mgr
+        do new <- liftIO $ Update.updater (Just upd) req { HTTP.path = p } mgr
            nc  <- initCandidates
            liftIO $ writeIORef cands nc
            return $ \t -> liftIO $ writeIORef lastUpdated (t, Right $ length new)
@@ -165,12 +167,13 @@ data Candidates = Candidates
     , candCategories :: Trie.Trie Int
     } deriving Show
 
-initCandidates :: (MonadHas Elasticsearch m, MonadIO m) => m Candidates
+initCandidates :: (MonadHas Elasticsearch m, MonadHas Arguments m, MonadIO m) => m Candidates
 initCandidates = do
     let aggr f = f JSON..= JSON.object ["terms" JSON..= JSON.object ["field" JSON..= f, "size" JSON..= (0::Int)]]
         body   = JSON.object ["aggs" JSON..= JSON.object [aggr "raw.name", aggr "raw.license", aggr "raw.category"]]
+    p  <- elasticRequestUrl "/package/_search" 
     nv <- rawElasticsearchQuery
-        (\r -> r { HTTP.path        = "/find_hackage/package/_search" 
+        (\r -> r { HTTP.path        = p
                  , HTTP.requestBody = HTTP.RequestBodyLBS $ JSON.encode body
                  })
     let spToPlus ' ' = '+'
@@ -186,8 +189,22 @@ initCandidates = do
         , candCategories = Trie.fromList (nv ^.. bucket "raw.category")
         }
 
+newtype Arguments = Arguments 
+    { argIndexName :: S.ByteString
+    }
+instance Extension Arguments
+
+elasticRequestUrl :: (MonadHas Arguments m, Monad m) => S.ByteString -> m S.ByteString
+elasticRequestUrl url = getExt Proxy >>= \args ->
+    return ('/' `S8.cons` argIndexName args `S8.append` url)
+
+initArguments :: Initializer' IO Arguments
+initArguments = initializer' $ getArgs >>= \case
+    [idx] -> return $ Arguments (S8.pack idx)
+    _     -> fail "find-hackage INDEX"
+
 main :: IO ()
-main = runHerokuWith run (initElasticsearch +> initHerokuHelics def {appName = "find-hackage"}) def $ do
+main = runHerokuWith run (initElasticsearch +> initHerokuHelics def {appName = "find-hackage"} +> initArguments) def $ do
     lastUpdated <- liftIO $ newIORef (defaultHTTPDate, Right 0 :: Either SomeException Int)
     cands <- liftIO . newIORef =<< initCandidates
     _ <- getExt (Proxy :: Proxy Elasticsearch) >>= fork . sentinel lastUpdated cands
@@ -253,10 +270,11 @@ main = runHerokuWith run (initElasticsearch +> initHerokuHelics def {appName = "
 
             lazyBytes . JSON.encode $ [JSON.toJSON query, JSON.toJSON $ take 10 cs]
 
+    pkgCount <- elasticRequestUrl "/package/_count"
     [capture|packages|] . method GET . document "get package count" . action $ do
         contentType "application/json"
         r <- rawElasticsearchQuery
-            (\r -> r { HTTP.path        = "/find_hackage/package/_count"
+            (\r -> r { HTTP.path        = pkgCount
                      , HTTP.requestBody = HTTP.RequestBodyBS "{\"query\": {\"match_all\": {}}}"
                      })
         case r ^? JSON.key "count" . JSON._Integer of

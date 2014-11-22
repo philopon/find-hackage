@@ -100,8 +100,8 @@ pdToValue p upl dpr = JSON.object
     , "inFavourOf"    .= maybe [] id dpr
     , "lastUploaded"  .= upl
     , "ngram"         .= JSON.object
-        [ "description" JSON..= (filter (`notElem` " \t\n\r") . unescapeHtml . D.description) p
-        , "synopsis"    JSON..= (filter (`notElem` " \t\n\r") . unescapeHtml . D.synopsis) p
+        [ "description" JSON..= (unescapeHtml . D.description) p
+        , "synopsis"    JSON..= (unescapeHtml . D.synopsis) p
         , "name"        JSON..= name
         ]
     , "raw"           .= JSON.object
@@ -153,9 +153,9 @@ getLastUploaded pkg req mgr = fmap (maybe defaultTime id . either (\(_ :: SomeEx
     httpLbs req { path = S.pack $ "/package/" ++ pkg ++ "/upload-time" } mgr
 
 sinkStoreElasticsearch :: (MonadThrow m, MonadIO m)
-                       => Int -> H.HashMap T.Text [T.Text] -> Request -> Manager
+                       => Int -> Bool -> H.HashMap T.Text [T.Text] -> Request -> Manager
                        -> Consumer (D.PackageDescription, UTCTime) m ()
-sinkStoreElasticsearch cs dpr req' mgr = do
+sinkStoreElasticsearch cs progress dpr req' mgr = do
     let req = req' { method = "POST" }
     fix $ \loop -> do
         chunk <- CL.take cs
@@ -167,7 +167,7 @@ sinkStoreElasticsearch cs dpr req' mgr = do
                 ]) chunk
         unless (null chunk) $ do
             _ <- liftIO $ httpLbs req { requestBody = RequestBodyLBS body } mgr
-            liftIO $ putChar '.' >> hFlush stdout
+            when progress . liftIO $ putChar '.' >> hFlush stdout
             loop
 
 newtype Deprecateds = Deprecateds { unDeprecateds :: H.HashMap T.Text [T.Text] }
@@ -186,17 +186,18 @@ getDeprecateds mgr = do
     maybe (fail "getDeprecateds: decode json failed.") return $
         unDeprecateds <$> (JSON.decode $ responseBody res)
 
-storeElasticsearch :: (MonadBaseControl IO m, MonadThrow m, MonadIO m, MonadResource m) => String -> Manager -> m ()
-storeElasticsearch url mgr = do
+storeElasticsearch :: (MonadBaseControl IO m, MonadThrow m, MonadIO m, MonadResource m)
+                   => String -> String -> Manager -> m ()
+storeElasticsearch url indexName mgr = do
     dpr   <- getDeprecateds mgr
     index <- parseUrl "http://hackage.haskell.org/packages/index.tar.gz"
     src   <- http index mgr
     req   <- parseUrl' url
     responseBody src $$+-
         ZLib.ungzip =$ untar =$ entryToPackageDescription index mgr =$
-        sinkStoreElasticsearch 500 dpr req { path = "/find_hackage/package/_bulk" } mgr
+        sinkStoreElasticsearch 500 True dpr req { path = S.pack $ '/' : indexName ++ "/package/_bulk" } mgr
 
 main :: IO ()
 main = withManagerSettings tlsManagerSettings $ \mgr -> liftIO getArgs >>= \case
-    [url] -> storeElasticsearch url mgr
-    _     -> liftIO $ putStrLn "USAGE: main ELASTICSEARCH_URL"
+    [index, url] -> storeElasticsearch url index mgr
+    _            -> liftIO $ putStrLn "USAGE: main INDEX ELASTICSEARCH_URL"

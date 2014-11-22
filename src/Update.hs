@@ -103,6 +103,6 @@ updater snc baseReq mgr = do
             Right doc -> do
                 upds <- filterM (\r -> isNewer baseReq r mgr) $ parseRecents doc
                 pds  <- catMaybes `liftM` mapM (\r -> fmap (,recentTime r) <$> fetchCabalFile hackage mgr r) upds
-                CL.sourceList pds $$ StorePackage.sinkStoreElasticsearch 100 H.empty baseReq mgr
+                CL.sourceList pds $$ StorePackage.sinkStoreElasticsearch 100 False H.empty baseReq mgr
                 return pds
             Left _    -> return []
