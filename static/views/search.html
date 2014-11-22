@@ -8,14 +8,23 @@
       <div class="row item">
         <div class="col-xs-1 index">{{$index + 1 + (page - 1) * 10 | number:0}}</div>
         <div class="col-xs-10">
+          <!-- 1st row-->
           <div class="row">
             <div class="pull-left name">
               <a ng-href="http://hackage.haskell.org/package/{{item.name}}">{{item.name}}-{{item.version}}</a>
+            </div>
+
+            <div class="pull-right best-haskell">
+              <a ng-href="http://best-haskell.herokuapp.com/#/package/{{item.name}}">
+                <img width="14" height="14" src="/img/best-haskell.png" title="best-haskell"/>
+              </a>
             </div>
             <div class="pull-right score" title="score">{{item.score | number:2}}</div>
             <div class="pull-right license" ng-click="search({q: navBar.query + ' license:' + item.license})">{{item.license}}</div>
             <div ng-if="item.deprecated" class="pull-right deprecated">DEPRECATED</div>
           </div>
+
+          <!-- 2nd row-->
           <div class="row">
             <div class="pull-left libExe">
               <span class="hasLibrary" ng-show="item.hasLibrary" ng-click="search({q: navBar.query + ' hasLibrary:true'})">
@@ -23,10 +32,13 @@
               </span>
               <span class="hasExecutable" ng-show="item.hasExecutable" ng-click="search({q: navBar.query + ' hasExecutable:true'})">executable</span>
             </div>
+
             <div class="pull-right lastUploaded" title="last uploaded">
               {{item.lastUploaded | date:'medium'}}
             </div>
           </div>
+
+          <!-- 3rd row-->
           <div class="row">
             <div class="categories pull-left">
               <div class="pull-left category"

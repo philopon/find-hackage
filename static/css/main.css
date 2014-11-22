@@ -7,6 +7,16 @@ footer {
   border-top: 1px solid #e5e5e5;
 }
 
+@media (max-width: 768px) {
+  nav.navbar form {
+    margin: 0;
+    padding: 7px 56px 7px 0px;
+  }
+  nav.navbar .navbar-header {
+    float: right;
+  }
+}
+
 .pagination span {
   cursor: pointer;
 }
@@ -15,8 +25,13 @@ footer {
   margin-bottom: 10px;
 }
 
-#search-result .index, #search-result .score, #search-result .license {
+#search-result .index, #search-result .score, #search-result .license { 
   padding-top: 4px;
+  text-align: right;
+}
+
+#search-result .best-haskell {
+  padding-top: 3px;
   text-align: right;
 }
 
