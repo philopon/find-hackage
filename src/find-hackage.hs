@@ -73,9 +73,9 @@ rawElasticsearchQuery reqmod = do
         JSON.decode . HTTP.responseBody =<< liftIO (HTTP.httpLbs (reqmod req) mgr)
     return (r::JSON.Value)
 
-searchPackage :: (Has Elasticsearch exts, Has Arguments exts, MonadIO m)
-              => Word -> T.Text -> ActionT exts prms m JSON.Value
-searchPackage skip query = do
+searchPackage' :: (Has Elasticsearch exts, Has Arguments exts, MonadIO m)
+               => Word -> T.Text -> ActionT exts prms m JSON.Value
+searchPackage' skip query = do
     let body = JSON.object
             [ "query" JSON..= JSON.object
                 [ "query_string" JSON..= JSON.object
@@ -93,6 +93,18 @@ searchPackage skip query = do
         (\r -> r { HTTP.path        = p
                  , HTTP.requestBody = HTTP.RequestBodyLBS $ JSON.encode body
                  })
+
+searchPackage :: (Has Elasticsearch exts, Has Arguments exts, MonadIO m, MonadBaseControl IO m)
+              => Word -> T.Text -> ActionT exts prms m JSON.Value
+searchPackage skip query =
+    searchPackage' skip query
+    `catch` (\(HTTP.StatusCodeException st h _) -> do
+        guard (st == status400)
+        contentType "text/plain"
+        status st
+        reset
+        maybe (return ()) bytes $ lookup "X-Response-Body-Start" h
+        stop)
 
 esJSONToAPIJSON :: JSON.Value -> Maybe JSON.Value
 esJSONToAPIJSON r = r ^? JSON.key "hits" . to (\o -> JSON.object
