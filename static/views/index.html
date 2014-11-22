@@ -6,7 +6,7 @@
 <form ng-submit="search()">
   <div class="row">
     <div id="index-search-box" class="col-xs-offset-1 col-xs-10">
-      <search-box ng-model="navBar.query" error="error"></search-box>
+      <search-box get-focus="searchboxFocus" ng-model="navBar.query" error="error"></search-box>
     </div>
   </div>
   <div class="text-center">
@@ -19,5 +19,16 @@
   <p>you can use elasticsearch <a href="http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/query-dsl-query-string-query.html#query-string-syntax">query string syntax</a>.
   </p>
 
-  <p>fields: name, version, license, copyright, maintainer, author, stability, homepage, bugReports, synopsis, description, category, hasLibrary, executable, deprecated, hasExecutable, inFavourOf, ngram.name, ngram.synopsis, ngram.description, raw.name, raw.license, raw.category</p>
+  <dl class="dl-horizontal">
+    <dt>string fields</dt>
+    <dd><span ng-click="addField(field + ':')" ng-repeat='field in ["name", "version", "license", "copyright", "maintainer", "author", "stability", "homepage", "bugReports", "synopsis", "description", "category", "executable", "inFavourOf", "ngram.name", "ngram.synopsis", "ngram.description", "raw.name", "raw.license", "raw.category"]'>
+      <span class="field-candidate">{{field}}</span><span ng-if="!$last">, </span></span>
+    </dd>
+    <dt>boolean fields</dt>
+    <dd><span ng-click="addField(field + ':')" ng-repeat='field in ["hasLibrary", "hasExecutable", "deprecated"]'>
+      <span class="field-candidate">{{field}}</span><span ng-if="!$last">, </span></span>
+    </dd>
+    <dt>date field</dt>
+    <dd><span ng-click="addField('lastUploaded:')"><span class="field-candidate">lastUploaded</span></span></dd>
+  </dl>
 </div>

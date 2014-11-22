@@ -129,7 +129,7 @@ angular.module('findHackageApp', ['ngRoute', 'angulartics', 'angulartics.google.
     restrict: 'E',
     scope: {error: '=', ngModel: '='},
     requre: 'ngModel',
-    template: '<div ng-class="{\'has-error\': error}"><input type="text" class="form-control" placeholder="{{error || \'search\'}}" ng-model="ngModel"></div>'
+    template: '<div ng-class="{\'has-error\': error}"><input type="text" class="form-control target" placeholder="{{error || \'search\'}}" ng-model="ngModel"></div>'
 
   }
 }) // }}}
@@ -163,10 +163,33 @@ angular.module('findHackageApp', ['ngRoute', 'angulartics', 'angulartics.google.
   }
 }) // }}}
 
-.controller('IndexController', function($scope, pageTitle, navigationBar, backend, $window) { // {{{
+.factory('getFocus', function($q){
+  var msg = $q.defer();
+  return {
+    promise: msg.promise,
+    focus:   function(){ msg.notify(true); },
+    blur:    function(){ msg.notify(false); }
+  }
+})
+
+.directive('getFocus', function(getFocus){
+  return {
+    restrict: 'A',
+    link: function(scope, element, attrs){
+      var target = attrs.focusTarget || '.target';
+      var tElem  = element[0].querySelector(target);
+      scope[attrs.getFocus].promise.then(null, null, function(f){
+        if(f){ tElem.focus(); } else { tElem.blur(); }
+      });
+    }
+  }
+})
+
+.controller('IndexController', function($scope, pageTitle, navigationBar, backend, $window, getFocus) { // {{{
   pageTitle.set('index');
   navigationBar.searchbox.hide();
   $scope.navBar = navigationBar;
+  $scope.searchboxFocus = getFocus;
 
   backend.updated().success(function(data){
     $scope.updated = new Date(data.date);
@@ -182,12 +205,21 @@ angular.module('findHackageApp', ['ngRoute', 'angulartics', 'angulartics.google.
         .success(function(data){
           var page = "http://hackage.haskell.org/package/" + data.result[0].name;
           $window.location.href = page;
-        }).fail(function(err){
+        }).error(function(err){
           $scope.error = err;
         });
     }, function(err){ $scope.error = err; })
   }
 
+  $scope.addField = function(f){
+    var newQuery = '';
+    if($scope.navBar.query.length != 0) {
+      newQuery += $scope.navBar.query + ' ';
+    }
+    newQuery += f;
+    $scope.navBar.query = newQuery;
+    $scope.searchboxFocus.focus();
+  }
 
   $scope.search = function(){
     backend.check($scope.navBar.query, 1).then(function(query){
@@ -217,6 +249,7 @@ angular.module('findHackageApp', ['ngRoute', 'angulartics', 'angulartics.google.
   $scope.navBar.query = $location.search().q;
   $scope.queryString  = $scope.navBar.query;
   $scope.page         = parseInt($location.search().page) || 1;
+  $scope.error        = null;
   pageTitle.set($scope.queryString);
 
   $scope.setPage = function(p){
@@ -245,9 +278,11 @@ angular.module('findHackageApp', ['ngRoute', 'angulartics', 'angulartics.google.
           $scope.nPage = data.pages;
           $scope.count = data.count;
           $scope.items = data.result;
+        }).error(function(err){
+          $scope.error = err;
         });
     }, function(err){
-      console.log(err);
+      $scope.error = err;
     });
   });
 

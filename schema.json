@@ -40,7 +40,7 @@
         "deprecated":    {"type": "boolean"},
         "hasExecutable": {"type": "boolean"},
         "inFavourOf":    {"type": "string"},
-        "lastUploaded":  {"type": "date", "format": "date_time"},
+        "lastUploaded":  {"type": "date"},
         "ngram": {
           "type": "object",
           "properties": {

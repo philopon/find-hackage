@@ -52,10 +52,18 @@ footer {
 #search-result .categories .separator {
   margin-right: 2px;
 }
-#search-result .categories .category {
+#search-result .categories .category, #search-result .hasLibrary, #search-result .hasExecutable {
   cursor: pointer;
+}
+
+#search-result .libExe .separator {
+  cursor: auto;
 }
 
 .help {
   margin-top: 20px;
+}
+
+.help .field-candidate {
+  cursor: pointer;
 }
