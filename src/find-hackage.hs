@@ -87,10 +87,11 @@ searchPackage' skip query = do
             [ "query" JSON..= JSON.object
                 [ "query_string" JSON..= JSON.object
                     [ "query"  JSON..= query
-                    , "fields" JSON..= [ "name^5", "synopsis", "description" :: T.Text
+                    , "fields" JSON..= [ "raw.name^100"
+                                       , "name^10", "synopsis^10", "description^10" :: T.Text
                                        , "ngram.name", "ngram.synopsis", "ngram.description"
                                        ]
-                    , "default_operator"             JSON..= ("AND" :: T.Text)
+                    , "default_operator" JSON..= ("AND" :: T.Text)
                     ]
                 ]
             , "from" JSON..= skip

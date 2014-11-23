@@ -16,13 +16,11 @@ angular.module('findHackageApp', ['ngRoute', 'angulartics', 'angulartics.google.
 //
 // pageTitle.set(title): set page title.
 //
-.factory('pageTitle', function($q){ // {{{
-  var title = $q.defer();
+.factory('pageTitle', function(){ // {{{
+  var title = '';
   return {
-    set: function(new_title){ title.notify(new_title); },
-    observe: function(func){
-      title.promise.then(null, null, func);
-    }
+    set: function(new_title){ title = new_title; },
+    get: function(){return title; }
   }
 })
 
@@ -33,7 +31,7 @@ angular.module('findHackageApp', ['ngRoute', 'angulartics', 'angulartics.google.
     replace: true,
     scope: {},
     link: function(scope){
-      pageTitle.observe(function(title){
+      scope.$watch(pageTitle.get, function(title){
         scope.title = 'find hackage' + (title ? ' - ' + title : '');
       });
     }
@@ -46,17 +44,14 @@ angular.module('findHackageApp', ['ngRoute', 'angulartics', 'angulartics.google.
 // navigationBar.searchbox.hide(): hide navigation search box.
 // navigationbar.query
 //
-.factory('navigationBar', function($q){ // {{{
-  var searchbox = $q.defer();
+.factory('navigationBar', function(){ // {{{
+  var visible = true;
   return {
     searchbox: {
-      show: function(){ searchbox.notify(true);},
-      hide: function(){ searchbox.notify(false);},
-      observe: function(func) {
-        searchbox.promise.then(null, null, func);
-      }
-    },
-    query: ""
+      show: function(){visible = true;},
+      hide: function(){visible = false;},
+      get:  function(){return visible;}
+    }
   }
 })
 
@@ -65,10 +60,11 @@ angular.module('findHackageApp', ['ngRoute', 'angulartics', 'angulartics.google.
     restrict: 'E',
     templateUrl: 'parts/navigationBar.html',
     scope: {brand: '@'},
+    replace: true,
     controller: 'NavigationBarController',
     link: function(scope){
       scope.navBar = navigationBar;
-      navigationBar.searchbox.observe(function(bool){
+      scope.$watch(navigationBar.searchbox.get, function(bool){
         scope.searchbox = bool;
       });
     }
@@ -129,8 +125,8 @@ angular.module('findHackageApp', ['ngRoute', 'angulartics', 'angulartics.google.
     restrict: 'E',
     scope: {error: '=', ngModel: '='},
     requre: 'ngModel',
+    replace: true,
     template: '<div ng-class="{\'has-error\': error}"><input type="text" class="form-control target" placeholder="{{error || \'search\'}}" ng-model="ngModel"></div>'
-
   }
 }) // }}}
 
@@ -163,7 +159,7 @@ angular.module('findHackageApp', ['ngRoute', 'angulartics', 'angulartics.google.
   }
 }) // }}}
 
-.factory('getFocus', function($q){
+.factory('getFocus', function($q){ // {{{
   var msg = $q.defer();
   return {
     promise: msg.promise,
@@ -183,7 +179,7 @@ angular.module('findHackageApp', ['ngRoute', 'angulartics', 'angulartics.google.
       });
     }
   }
-})
+}) // }}}
 
 .controller('IndexController', function($scope, pageTitle, navigationBar, backend, $window, getFocus) { // {{{
   pageTitle.set('index');
