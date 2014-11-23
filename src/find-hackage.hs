@@ -8,12 +8,13 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE CPP #-}
 
 import Control.Applicative
 import Control.Exception.Lifted
 import Control.Monad
 import Control.Monad.Trans.Control
-import Control.Monad.Apiary.Action (file')
+
 import Data.Proxy
 import Data.Word
 
@@ -54,6 +55,12 @@ import qualified StorePackage
 
 import Web.Apiary.Helics
 import System.Environment (getArgs)
+
+#if DEVELOP
+import Web.Apiary.Develop
+#else
+import Web.Apiary
+#endif
 
 data Elasticsearch = Elasticsearch HTTP.Request HTTP.Manager
 instance Extension Elasticsearch
@@ -301,7 +308,7 @@ main = runHerokuWith run (initElasticsearch +> initHerokuHelics def {appName = "
 
     [capture|/nop|] . action $ bytes "nop"
 
-    [capture|/**path|] . method GET . action $ do
+    [capture|**path|] . method GET . action $ do
         p <- param [key|path|]
         file (joinPath $ "static" : map T.unpack p) Nothing
 
