@@ -51,7 +51,8 @@ angular.module('findHackageApp', ['ngRoute', 'angulartics', 'angulartics.google.
       show: function(){visible = true;},
       hide: function(){visible = false;},
       get:  function(){return visible;}
-    }
+    },
+    query: ""
   }
 })
 

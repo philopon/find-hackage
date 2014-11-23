@@ -86,13 +86,23 @@ searchPackage' :: (Has Elasticsearch exts, Has Arguments exts, MonadIO m)
 searchPackage' skip query = do
     let body = JSON.object
             [ "query" JSON..= JSON.object
-                [ "query_string" JSON..= JSON.object
-                    [ "query"  JSON..= query
-                    , "fields" JSON..= [ "raw.name^100"
-                                       , "name^10", "synopsis^10", "description^10" :: T.Text
-                                       , "ngram.name", "ngram.synopsis", "ngram.description"
-                                       ]
-                    , "default_operator" JSON..= ("AND" :: T.Text)
+                [ "function_score" JSON..= JSON.object
+                    [ "query" JSON..= JSON.object
+                        [ "query_string" JSON..= JSON.object
+                            [ "query"  JSON..= query
+                            , "fields" JSON..= [ "raw.name^5"
+                                               , "name^3", "synopsis", "description" :: T.Text
+                                               , "ngram.name^0.5", "ngram.synopsis^0.3", "ngram.description^0.3"
+                                               ]
+                            , "default_operator" JSON..= ("AND" :: T.Text)
+                            ]
+                        ]
+                    , "functions" JSON..=
+                        [ JSON.object 
+                            [ "script_score" JSON..= JSON.object
+                                [ "script" JSON..= ("pow(doc['lastUploaded'].date.getMillis() / 1000000000000, 4)" :: T.Text) ]
+                            ]
+                        ]
                     ]
                 ]
             , "from" JSON..= skip
