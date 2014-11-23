@@ -13,6 +13,7 @@
 import Control.Applicative
 import Control.Exception.Lifted
 import Control.Monad
+import Control.Monad.Apiary.Action(file')
 import Control.Monad.Trans.Control
 
 import Data.Proxy
