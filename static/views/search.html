@@ -20,7 +20,7 @@
               </a>
             </div>
             <div class="pull-right score" title="score">{{item.score | number:2}}</div>
-            <div class="pull-right license" ng-click="search({q: navBar.query + ' license:' + item.license})">{{item.license}}</div>
+            <div class="pull-right license" ng-click="search({q: navBar.query + ' license:' + dblQuote(item.license)})">{{item.license}}</div>
             <div ng-if="item.deprecated" class="pull-right deprecated">DEPRECATED</div>
           </div>
 
@@ -42,7 +42,7 @@
           <div class="row">
             <div class="categories pull-left">
               <div class="pull-left category"
-                   ng-click="search({q: navBar.query + ' category:' + category})"
+                   ng-click="search({q: navBar.query + ' category:' + dblQuote(category)})"
                    ng-repeat-start="category in item.category">{{category}}</div>
               <div class="pull-left separator" ng-repeat-end>{{$last ? "" : ","}}</div>
             </div>

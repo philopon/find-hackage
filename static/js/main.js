@@ -267,6 +267,15 @@ angular.module('findHackageApp', ['ngRoute', 'angulartics', 'angulartics.google.
     }
   });
 
+  $scope.dblQuote = function(s) {
+    for(var i = 0; i < s.length; i++) {
+      if(s[i] === ' ') {
+        return '"' + s + '"';
+      }
+    }
+    return s;
+  }
+
   $scope.$watch('page', function(page){
     if(!page){return}
     backend.check($location.search().q, page).then(function(query){
