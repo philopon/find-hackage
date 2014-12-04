@@ -68,8 +68,8 @@ executable find-hackage
                      , exceptions           >=0.6
                      , http-types           >=0.8
                      , monad-control        >=0.3
-                     , apiary               >=1.1.4
-                     , apiary-helics        >=1.1.4
+                     , apiary               >=1.2
+                     , apiary-helics        >=1.2
                      , warp                 >=3.0
                      , filepath             >=1.3
                      , http-date            >=0.0

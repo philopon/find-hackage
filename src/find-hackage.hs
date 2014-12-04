@@ -13,7 +13,6 @@
 import Control.Applicative
 import Control.Exception.Lifted
 import Control.Monad
-import Control.Monad.Apiary.Action(file')
 import Control.Monad.Trans.Control
 
 import Data.Proxy
@@ -73,7 +72,7 @@ initElasticsearch = initializerBracket $ \e m -> do
         Just (Just r) -> HTTP.withManager HTTP.tlsManagerSettings $ \mgr -> m $ Elasticsearch r mgr
         _ -> fail "initElasticsearch: failed."
 
-rawElasticsearchQuery :: (MonadHas Elasticsearch m, MonadIO m)
+rawElasticsearchQuery :: (Has Elasticsearch exts, MonadExts exts m, MonadIO m)
                       => (HTTP.Request -> HTTP.Request) -> m JSON.Value
 rawElasticsearchQuery reqmod = do
     Elasticsearch req mgr <- getExt (Proxy :: Proxy Elasticsearch)
@@ -121,7 +120,6 @@ searchPackage skip query =
         guard (st == status400)
         contentType "text/plain"
         status st
-        reset
         maybe (return ()) bytes $ lookup "X-Response-Body-Start" h
         stop)
 
@@ -173,7 +171,7 @@ createAtom upd feedId total startI startP terms items = XML.create $ \doc -> do
         _ <- XML.appendElement "description" item >>= XML.appendPCData (i ^. _2)
         return ()
 
-sentinel :: (MonadHas Elasticsearch m, MonadHas Arguments m, MonadIO m, MonadBaseControl IO m)
+sentinel :: (Has Elasticsearch exts, Has Arguments exts, MonadExts exts m, MonadIO m, MonadBaseControl IO m)
          => IORef (HTTPDate, Either SomeException Int) -> IORef Candidates -> Elasticsearch -> m ()
 sentinel lastUpdated cands (Elasticsearch req mgr) = loop where
   loop = do
@@ -198,7 +196,7 @@ data Candidates = Candidates
     , candCategories :: Trie.Trie Int
     } deriving Show
 
-initCandidates :: (MonadHas Elasticsearch m, MonadHas Arguments m, MonadIO m) => m Candidates
+initCandidates :: (Has Elasticsearch exts, Has Arguments exts, MonadExts exts m, MonadIO m) => m Candidates
 initCandidates = do
     let aggr f = f JSON..= JSON.object ["terms" JSON..= JSON.object ["field" JSON..= f, "size" JSON..= (0::Int)]]
         body   = JSON.object ["aggs" JSON..= JSON.object [aggr "raw.name", aggr "raw.license", aggr "raw.category"]]
@@ -225,7 +223,7 @@ newtype Arguments = Arguments
     }
 instance Extension Arguments
 
-elasticRequestUrl :: (MonadHas Arguments m, Monad m) => S.ByteString -> m S.ByteString
+elasticRequestUrl :: (Has Arguments exts, MonadExts exts m, Monad m) => S.ByteString -> m S.ByteString
 elasticRequestUrl url = getExt Proxy >>= \args ->
     return ('/' `S8.cons` argIndexName args `S8.append` url)
 
