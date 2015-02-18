@@ -99,7 +99,7 @@ searchPackage' skip query = do
                     , "functions" JSON..=
                         [ JSON.object 
                             [ "script_score" JSON..= JSON.object
-                                [ "script" JSON..= ("pow(doc['lastUploaded'].date.getMillis() / 1000000000000, 4)" :: T.Text) ]
+                                [ "script" JSON..= ("pow(doc['lastUploaded'].value / 1000000000000, 4)" :: T.Text) ]
                             ]
                         ]
                     ]
